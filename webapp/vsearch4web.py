@@ -1,9 +1,14 @@
 from flask import Flask, render_template, request, escape
 from vsearch import search4letters
-import mysql.connector as connector
 from dbcm import UseDatabase
 
 app = Flask(__name__)
+
+app.config['dbconfig'] = {'host': '127.0.0.1',
+                          'user': 'vsearch',
+                          'password': 'mypassword',
+                          'database': 'vsearchlogDB'
+                          }
 
 
 @app.route('/')
@@ -13,15 +18,7 @@ def entry_page() -> 'html':
 
 
 def log_request(req: 'flask request', res: str):
-    # with open('vsearch.log', 'a') as file:
-    #     print(req.form, req.remote_addr, req.user_agent, res, file=file, sep='|')
-    dbconfig = {'host': '127.0.0.1',
-                'user': 'vsearch',
-                'password': 'mypassword',
-                'database': 'vsearchlogDB'
-                }
-
-    with UseDatabase(dbconfig) as cursor:
+    with UseDatabase(app.config['dbconfig']) as cursor:
         _SQL = """insert into log
         (phrase, letters, ip, browser_string, results)
         values
@@ -46,20 +43,18 @@ def do_search() -> str:
                            the_title=title,
                            the_results=results, )
 
+
 @app.route('/viewlog')
 def view_log() -> 'html':
-    with open('vsearch.log') as file:
-        content = []
-        for line in file:
-            request_array = []
-            for item in line.split('|'):
-                request_array.append(escape(item))
-            content.append(request_array)
-        titles = ('Form data', 'Remote_addr', 'User_agent', 'Results')
-        return render_template('viewlog.html',
-                               the_title='View Log',
-                               the_row_titles=titles,
-                               the_data=content)
+    with UseDatabase(app.config['dbconfig']) as cursor:
+        _SQL = """select phrase, letters, ip, browser_string, results from log"""
+        cursor.execute(_SQL)
+        content = cursor.fetchall()
+    titles = ('Phrase', 'Letters', 'Remote_addr', 'User_agent', 'Results')
+    return render_template('viewlog.html',
+                           the_title='View Log',
+                           the_row_titles=titles,
+                           the_data=content)
 
 
 if __name__ == '__main__':

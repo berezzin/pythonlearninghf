@@ -1,3 +1,4 @@
+import mysql.connector.errors
 from flask import Flask, render_template, request, escape, session
 from vsearch import search4letters
 from dbcm import UseDatabase
@@ -51,15 +52,20 @@ def do_search() -> str:
 @app.route('/viewlog')
 @check_logged_in
 def view_log() -> 'html':
-    with UseDatabase(app.config['dbconfig']) as cursor:
-        _SQL = """select phrase, letters, ip, browser_string, results from log"""
-        cursor.execute(_SQL)
-        content = cursor.fetchall()
-    titles = ('Phrase', 'Letters', 'Remote_addr', 'User_agent', 'Results')
-    return render_template('viewlog.html',
-                           the_title='View Log',
-                           the_row_titles=titles,
-                           the_data=content)
+    try:
+        with UseDatabase(app.config['dbconfig']) as cursor:
+            _SQL = """select phrase, letters, ip, browser_string, results from log"""
+            cursor.execute(_SQL)
+            content = cursor.fetchall()
+        titles = ('Phrase', 'Letters', 'Remote_addr', 'User_agent', 'Results')
+        return render_template('viewlog.html',
+                               the_title='View Log',
+                               the_row_titles=titles,
+                               the_data=content)
+    except mysql.connector.errors.InterfaceError as err:
+        print(f'Is your database switched on? Error: {err}')
+    except Exception as err:
+        print(f'***** Logging error is : {err}')
 
 
 @app.route('/login')

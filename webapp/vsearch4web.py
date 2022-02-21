@@ -1,7 +1,7 @@
 import mysql.connector.errors
 from flask import Flask, render_template, request, escape, session
 from vsearch import search4letters
-from dbcm import UseDatabase
+from dbcm import UseDatabase, ConnectionError, CredentialsError
 from checker import check_logged_in
 
 app = Flask(__name__)
@@ -40,6 +40,8 @@ def do_search() -> str:
     results = str(search4letters(phrase, letters))
     try:
         log_request(request, results)
+    except CredentialsError as err:
+        print(f'User-id/password is incorrect. Error: {str(err)}')
     except Exception as err:
         print(f'****** Logging error is: {err}')
     return render_template('results.html',
@@ -62,10 +64,12 @@ def view_log() -> 'html':
                                the_title='View Log',
                                the_row_titles=titles,
                                the_data=content)
-    except mysql.connector.errors.InterfaceError as err:
-        print(f'Is your database switched on? Error: {err}')
+    except CredentialsError as err:
+        print(f'User-id/password is incorrect. Error: {str(err)}')
+    except ConnectionError as err:
+        print(f'Is your database switched on? Error: {str(err)}')
     except Exception as err:
-        print(f'***** Logging error is : {err}')
+        print(f'***** Logging error is : {str(err)}')
 
 
 @app.route('/login')

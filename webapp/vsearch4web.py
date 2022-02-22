@@ -1,8 +1,11 @@
+import time
+
 import mysql.connector.errors
 from flask import Flask, render_template, request, escape, session
 from vsearch import search4letters
-from dbcm import UseDatabase, ConnectionError, CredentialsError
+from dbcm import UseDatabase, ConnectionError, CredentialsError, SQLError
 from checker import check_logged_in
+from threading import Thread
 
 app = Flask(__name__)
 
@@ -25,6 +28,7 @@ def log_request(req: 'flask request', res: str):
         (phrase, letters, ip, browser_string, results)
         values
         (%s, %s, %s, %s, %s)"""
+        time.sleep(10)
         cursor.execute(_SQL, (req.form['phrase'],
                               req.form['letters'],
                               req.remote_addr,
@@ -39,7 +43,8 @@ def do_search() -> str:
     title = 'Here are your results'
     results = str(search4letters(phrase, letters))
     try:
-        log_request(request, results)
+        t = Thread(target=log_request, args=(request, results))
+        t.start()
     except CredentialsError as err:
         print(f'User-id/password is incorrect. Error: {str(err)}')
     except Exception as err:
@@ -68,6 +73,8 @@ def view_log() -> 'html':
         print(f'User-id/password is incorrect. Error: {str(err)}')
     except ConnectionError as err:
         print(f'Is your database switched on? Error: {str(err)}')
+    except SQLError as err:
+        print(f'Is your query correct? Error: {str(err)}')
     except Exception as err:
         print(f'***** Logging error is : {str(err)}')
 

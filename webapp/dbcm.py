@@ -14,6 +14,10 @@ class SQLError(Exception):
     pass
 
 
+class SQLError(Exception):
+    pass
+
+
 class UseDatabase:
     def __init__(self, dbconfig: dict) -> None:
         self.dbconfig = dbconfig
@@ -32,3 +36,8 @@ class UseDatabase:
         self.connection.commit()
         self.cursor.close()
         self.connection.close()
+
+        if exc_type == mysql.connector.errors.ProgrammingError:
+            raise SQLError(exc_value)
+        elif exc_type:
+            raise exc_type(exc_value)

@@ -1,7 +1,7 @@
 import time
 
 import mysql.connector.errors
-from flask import Flask, render_template, request, escape, session
+from flask import Flask, render_template, request, escape, session, copy_current_request_context
 from vsearch import search4letters
 from dbcm import UseDatabase, ConnectionError, CredentialsError, SQLError
 from checker import check_logged_in
@@ -22,22 +22,22 @@ def entry_page() -> 'html':
     return render_template('entry.html', the_title='Welcome to search letters page')
 
 
-def log_request(req: 'flask request', res: str):
-    with UseDatabase(app.config['dbconfig']) as cursor:
-        _SQL = """insert into log
-        (phrase, letters, ip, browser_string, results)
-        values
-        (%s, %s, %s, %s, %s)"""
-        time.sleep(10)
-        cursor.execute(_SQL, (req.form['phrase'],
-                              req.form['letters'],
-                              req.remote_addr,
-                              req.user_agent.browser,
-                              res))
-
-
 @app.route('/search4', methods=['POST'])
 def do_search() -> str:
+    @copy_current_request_context
+    def log_request(req: 'flask request', res: str):
+        with UseDatabase(app.config['dbconfig']) as cursor:
+            _SQL = """insert into log
+            (phrase, letters, ip, browser_string, results)
+            values
+            (%s, %s, %s, %s, %s)"""
+            time.sleep(10)
+            cursor.execute(_SQL, (req.form['phrase'],
+                                  req.form['letters'],
+                                  req.remote_addr,
+                                  req.user_agent.browser,
+                                  res))
+
     phrase = request.form['phrase']
     letters = request.form['letters']
     title = 'Here are your results'

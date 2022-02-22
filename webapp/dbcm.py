@@ -14,10 +14,6 @@ class SQLError(Exception):
     pass
 
 
-class SQLError(Exception):
-    pass
-
-
 class UseDatabase:
     def __init__(self, dbconfig: dict) -> None:
         self.dbconfig = dbconfig
